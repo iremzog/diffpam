@@ -1,8 +1,3 @@
-conditioning:
-  method: ps
-  params:
-    scale: 0.5
-
 data:
   name: pam
   root: ./data/samples/
@@ -11,12 +6,8 @@ measurement:
   operator:
     name: inpainting
   mask_opt:
-    mask_type: random
+    mask_type: periodic
+    mask_ratio: (5,1)
     # mask_len_range: !!python/tuple [128, 129]  # for box
     mask_prob_range: !!python/tuple [0.3, 0.7]  # for random
     image_size: 256
-
-
-  noise:
-    name: gaussian
-    sigma: 0.05

@@ -34,8 +34,8 @@ def get_dataloader(dataset: VisionDataset,
     return dataloader
 
 
-@register_dataset(name='ffhq')
-class FFHQDataset(VisionDataset):
+@register_dataset(name='pam')
+class PAMDataset(VisionDataset):
     def __init__(self, root: str, transforms: Optional[Callable]=None):
         super().__init__(root, transforms)
 

@@ -176,20 +176,21 @@ def random_sq_bbox(img, mask_shape, image_size=256, margin=(16, 16)):
 
 class mask_generator:
     def __init__(self, mask_type, mask_len_range=None, mask_prob_range=None,
-                 image_size=256, margin=(16, 16)):
+                 mask_ratio = None, image_size=256, margin=(16, 16)):
         """
         (mask_len_range): given in (min, max) tuple.
         Specifies the range of box size in each dimension
         (mask_prob_range): for the case of random masking,
         specify the probability of individual pixels being masked
         """
-        assert mask_type in ['box', 'random', 'both', 'extreme']
+        assert mask_type in ['box', 'random', 'periodic', 'extreme']
         self.mask_type = mask_type
         self.mask_len_range = mask_len_range
         self.mask_prob_range = mask_prob_range
+        self.mask_ratio = mask_ratio
         self.image_size = image_size
         self.margin = margin
-
+        
     def _retrieve_box(self, img):
         l, h = self.mask_len_range
         l, h = int(l), int(h)
@@ -215,6 +216,13 @@ class mask_generator:
         mask[:, ...] = mask_b
         return mask
 
+    def _retrieve_line(self, img, rx, ry):
+        
+        mask = torch.zeros_like(img, device=img.device)
+        mask[:, ::rx, ::ry] = 1
+        
+        return mask
+    
     def __call__(self, img):
         if self.mask_type == 'random':
             mask = self._retrieve_random(img)
@@ -225,6 +233,9 @@ class mask_generator:
         elif self.mask_type == 'extreme':
             mask, t, th, w, wl = self._retrieve_box(img)
             mask = 1. - mask
+            return mask
+        elif self.mask_type == 'periodic':
+            mask = self._retrieve_line(img, rx=self.mask_ratio[0], ry=self.mask_ratio[1])
             return mask
 
 def unnormalize(img, s=0.95):

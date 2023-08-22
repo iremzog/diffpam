@@ -39,7 +39,7 @@ class PAMDataset(VisionDataset):
     def __init__(self, root: str, transforms: Optional[Callable]=None):
         super().__init__(root, transforms)
 
-        self.fpaths = sorted(glob(root + '/**/*.jpg', recursive=True))
+        self.fpaths = sorted(glob(root + '/**/*.jpeg', recursive=True))
         assert len(self.fpaths) > 0, "File list is empty. Check the root."
 
     def __len__(self):

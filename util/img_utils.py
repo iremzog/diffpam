@@ -219,7 +219,7 @@ class mask_generator:
     def _retrieve_line(self, img, rx, ry):
         
         mask = torch.zeros_like(img, device=img.device)
-        mask[:, ::rx, ::ry] = 1
+        mask[:, :, ::rx, ::ry] = 1
         
         return mask
     
@@ -235,6 +235,7 @@ class mask_generator:
             mask = 1. - mask
             return mask
         elif self.mask_type == 'periodic':
+            print(self.mask_ratio[0])
             mask = self._retrieve_line(img, rx=self.mask_ratio[0], ry=self.mask_ratio[1])
             return mask
 

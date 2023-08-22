@@ -11,7 +11,7 @@ from guided_diffusion.condition_methods import get_conditioning_method
 from guided_diffusion.measurements import get_noise, get_operator
 from guided_diffusion.unet import create_model
 from guided_diffusion.gaussian_diffusion import create_sampler
-from data.dataloader import get_dataset, get_dataloader
+from util.dataloader import get_dataset, get_dataloader
 from util.img_utils import clear_color, mask_generator
 from util.logger import get_logger
 from util.measure import Measure
@@ -113,17 +113,18 @@ def main():
          
         # Creating proxy X ref
         upsampled = operator.transpose(y_n)
-        x_start = sampler.q_sample(upsampled, t=500)
-        
-
-        
-        # Sampling
-        # x_start = torch.randn(ref_img.shape, device=device).requires_grad_()
-        sr_img = sample_fn(x_start=x_start, measurement=y_n, record=True, save_root=out_path, t=500)
+        # x_start = sampler.q_sample(upsampled, t=500)
         
         plt.imsave(os.path.join(out_path, 'input', fname), clear_color(y_n))
-        plt.imsave(os.path.join(out_path, 'label', fname), clear_color(ref_img-upsampled))
-        plt.imsave(os.path.join(out_path, 'recon', fname), clear_color(sr_img+upsampled))
+        plt.imsave(os.path.join(out_path, 'label', fname), clear_color(ref_img))
+        
+        # Sampling
+        x_start = torch.randn(ref_img.shape, device=device).requires_grad_()
+        sr_img = sample_fn(x_start=x_start, measurement=y_n, record=True, save_root=out_path, t=None)
+        
+        plt.imsave(os.path.join(out_path, 'input', fname), clear_color(y_n))
+        plt.imsave(os.path.join(out_path, 'label', fname), clear_color(ref_img))
+        plt.imsave(os.path.join(out_path, 'recon', fname), clear_color(sr_img))
         plt.imsave(os.path.join(out_path, 'bicubic', fname), clear_color(upsampled))
         plt.imsave(os.path.join(out_path, 'bicubic', 'x_start.jpeg'), clear_color(x_start))
         

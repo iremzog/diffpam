@@ -6,18 +6,21 @@ conditioning:
 data:
   name: pam
   root: ./data/samples/
+  
+simple_sr:
+    model_path: 'models/model_ckpt_steps_3000.ckpt'
 
 measurement:
   operator:
     name: inpainting
   mask_opt:
     mask_type: periodic
-    mask_ratio: !!python/tuple [5,1]
-    # mask_len_range: !!python/tuple [128, 129]  # for box
-    mask_prob_range: !!python/tuple [0.5, 0.7]  # for random
+    mask_ratio: !!python/tuple [5,1] # for periodic
+    mask_len_range: !!python/tuple [128, 129]  # for box
+    mask_prob_range: !!python/tuple [0.8, 0.8]  # for random
     image_size: 256
 
 
   noise:
     name: gaussian
-    sigma: 0.05
+    sigma: 0.0

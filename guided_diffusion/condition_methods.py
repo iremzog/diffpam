@@ -59,8 +59,8 @@ class Identity(ConditioningMethod):
 
 @register_conditioning_method(name='projection')
 class Projection(ConditioningMethod):
-    def conditioning(self, x_t, noisy_measurement, **kwargs):
-        x_t = self.project(data=x_t, noisy_measurement=noisy_measurement)
+    def conditioning(self, x_t, measurement, noisy_measurement, **kwargs):
+        x_t = self.project(data=x_t, noisy_measurement=noisy_measurement, **kwargs)
         return x_t
 
 

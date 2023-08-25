@@ -44,8 +44,12 @@ class LinearOperator(ABC):
         return data - self.transpose(self.forward(data, **kwargs), **kwargs)
 
     def project(self, data, measurement, **kwargs):
-        # calculate (I - A^T * A)Y - AX
-        return self.ortho_project(measurement, **kwargs) - self.forward(data, **kwargs)
+        # calculate (I - A^T * A)X + A^T Y
+        return self.ortho_project(data, **kwargs) + self.transpose(measurement, **kwargs)
+    
+    # def project(self, data, measurement, **kwargs):
+    #     # calculate (I - A^T * A)Y - AX
+    #     return self.ortho_project(measurement, **kwargs) - self.forward(data, **kwargs)
 
 
 @register_operator(name='noise')
@@ -99,6 +103,9 @@ class InpaintingOperator(LinearOperator):
 
     def ortho_project(self, data, **kwargs):
         return data - self.forward(data, **kwargs)
+    
+    def project(self, data, measurement, **kwargs):
+        return data - self.forward(data, **kwargs)+ measurement
 
 
 # =============

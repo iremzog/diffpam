@@ -14,7 +14,10 @@ def clear(x):
 
 def clear_color(x):
     x = x.detach().cpu().squeeze().numpy()
-    return normalize_np(np.transpose(x, (1, 2, 0)))
+    if x.ndim >= 3:
+        return normalize_np(np.transpose(x, (1, 2, 0)))
+    else:
+        return normalize_np(x)
 
 
 def normalize_np(img):

@@ -21,8 +21,8 @@ class AddGaussianNoise(object):
         return self.__class__.__name__ + '(mean={0}, std={1})'.format(self.mean, self.std)
 
 
-def get_dataloader(data_path, operator, mask_gen=None,
-                   image_size=256, batch_size=32, train=True):
+def get_dataloader(data_path, ratio, image_size=256, 
+                   batch_size=32, train=True, device=None):
 
     if train:
         transforms = T.Compose([
@@ -38,8 +38,11 @@ def get_dataloader(data_path, operator, mask_gen=None,
                                     T.ToTensor(),
                                     T.Normalize(0.5, 0.5),
                                 ])
-
-        # multiple_list = [f for f in datalist for i in range(10)]  # 10 random crops in an image
+        
+        datalist = [f for f in os.listdir(data_path) if is_image_path(f)]
+        multiple_list = [f for f in datalist for i in range(10)]  # 10 random crops in an image
+        dataset = PAMDataset(ratio, multiple_list, data_path, transforms, device=device)
+        
     else:
         transforms = T.Compose([
                                     T.CenterCrop(image_size),
@@ -47,9 +50,8 @@ def get_dataloader(data_path, operator, mask_gen=None,
                                     T.Normalize(0.5, 0.5),
                                 ])
 
-    datalist = [f for f in os.listdir(data_path) if is_image_path(f)]
-
-    dataset = PAMDataset(operator, datalist, data_path, transforms, mask_gen=mask_gen)
+        datalist = [f for f in os.listdir(data_path) if is_image_path(f)]
+        dataset = PAMDataset(ratio, datalist, data_path, transforms, device=device)
     dataloader = torch.utils.data.DataLoader(dataset,
                                              batch_size=batch_size,
                                              shuffle=train)
@@ -75,12 +77,13 @@ def get_lr_image(hr_image, rx, ry, mode='bilinear'):
 
 
 class PAMDataset(torch.utils.data.Dataset):
-    def __init__(self, operator, img_list, img_dir, transforms, mask_gen=None):
+    def __init__(self, ratio, img_list, img_dir, transforms, device=None):
 
-        self.operator = operator
+        self.ratio = ratio
         self.img_dir = img_dir
+        self.img_list = img_list
         self.transforms = transforms
-        self.mask_gen = mask_gen
+        self.device = device
         
     def __len__(self):
         return len(self.img_list)
@@ -88,12 +91,14 @@ class PAMDataset(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         
         img_path = os.path.join(self.img_dir, self.img_list[idx])
-        hr_image = self.transforms(Image.open(img_path)).unsqueeze(0)
+        hr_image = Image.open(img_path) 
+        hr_image = self.transforms(hr_image).unsqueeze(0).to(self.device)
+        lr_image = get_lr_image(hr_image, self.ratio[0], self.ratio[1])
         
-        if self.mask_gen is not None:
-            mask = self.mask_gen(hr_image)
-            lr_image = self.operator.forward(hr_image, mask=mask)
-        else:
-            lr_image = self.operator.forward(hr_image)
+        # if self.mask_gen is not None:
+        #     mask = self.mask_gen(hr_image)
+        #     lr_image = self.operator.forward(hr_image, mask=mask)
+        # else:
+        #     lr_image = self.operator.forward(hr_image)
 
         return lr_image[0], hr_image[0]

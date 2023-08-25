@@ -1,6 +1,4 @@
 import lpips
-import numpy as np
-import torch
 from skimage.metrics import peak_signal_noise_ratio as psnr
 from skimage.metrics import structural_similarity as ssim
 from util.tools import clear_color
@@ -38,9 +36,11 @@ class Measure:
         return dist01
 
     def ssim(self, imgA, imgB):
-
-        score, diff = ssim(imgA, imgB, full=True, multichannel=True, data_range=255, channel_axis=2)
-        # score, diff = ssim(np.squeeze(imgA), np.squeeze(imgB), full=True, multichannel=False, data_range=255)
+        
+        if imgA.ndim >= 3:
+            score, diff = ssim(imgA, imgB, full=True, multichannel=True, data_range=255, channel_axis=2)
+        else:
+            score, diff = ssim(imgA, imgB, full=True, multichannel=False, data_range=255)
         return score
 
     def psnr(self, imgA, imgB):

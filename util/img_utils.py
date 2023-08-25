@@ -46,7 +46,11 @@ def clear_color(x):
     if torch.is_complex(x):
         x = torch.abs(x)
     x = x.detach().cpu().squeeze().numpy()
-    return normalize_np(np.transpose(x, (1, 2, 0)))
+    
+    if x.ndim >= 3:
+        return normalize_np(np.transpose(x, (1, 2, 0)))
+    else:
+        return normalize_np(x)
 
 
 def normalize_np(img):
@@ -176,7 +180,7 @@ def random_sq_bbox(img, mask_shape, image_size=256, margin=(16, 16)):
 
 class mask_generator:
     def __init__(self, mask_type, mask_len_range=None, mask_prob_range=None,
-                 mask_ratio = None, image_size=256, margin=(16, 16)):
+                 mask_ratio=None, image_size=256, margin=(16, 16)):
         """
         (mask_len_range): given in (min, max) tuple.
         Specifies the range of box size in each dimension
@@ -219,7 +223,7 @@ class mask_generator:
     def _retrieve_line(self, img, rx, ry):
         
         mask = torch.zeros_like(img, device=img.device)
-        mask[:, :, ::rx, ::ry] = 1
+        mask[..., ::rx, ::ry] = 1
         
         return mask
     
@@ -235,7 +239,6 @@ class mask_generator:
             mask = 1. - mask
             return mask
         elif self.mask_type == 'periodic':
-            print(self.mask_ratio[0])
             mask = self._retrieve_line(img, rx=self.mask_ratio[0], ry=self.mask_ratio[1])
             return mask
 
@@ -268,49 +271,6 @@ def init_kernel_torch(kernel, device="cuda:0"):
     kernel = kernel.view(1, 1, h, w)
     kernel = kernel.repeat(1, 3, 1, 1)
     return kernel
-
-
-# class Blurkernel(nn.Module):
-#     def __init__(self, blur_type='gaussian', kernel_size=31, std=3.0, device=None):
-#         super().__init__()
-#         self.blur_type = blur_type
-#         self.kernel_size = kernel_size
-#         self.std = std
-#         self.device = device
-#         self.seq = nn.Sequential(
-#             nn.ReflectionPad2d(self.kernel_size//2),
-#             nn.Conv2d(3, 3, self.kernel_size, stride=1, padding=0, bias=False, groups=3)
-#         )
-
-#         self.weights_init()
-
-#     def forward(self, x):
-#         return self.seq(x)
-
-#     def weights_init(self):
-#         if self.blur_type == "gaussian":
-#             n = np.zeros((self.kernel_size, self.kernel_size))
-#             n[self.kernel_size // 2,self.kernel_size // 2] = 1
-#             k = scipy.ndimage.gaussian_filter(n, sigma=self.std)
-#             k = torch.from_numpy(k)
-#             self.k = k
-#             for name, f in self.named_parameters():
-#                 f.data.copy_(k)
-#         elif self.blur_type == "motion":
-#             k = Kernel(size=(self.kernel_size, self.kernel_size), intensity=self.std).kernelMatrix
-#             k = torch.from_numpy(k)
-#             self.k = k
-#             for name, f in self.named_parameters():
-#                 f.data.copy_(k)
-
-#     def update_weights(self, k):
-#         if not torch.is_tensor(k):
-#             k = torch.from_numpy(k).to(self.device)
-#         for name, f in self.named_parameters():
-#             f.data.copy_(k)
-
-#     def get_kernel(self):
-#         return self.k
 
 
 class exact_posterior():

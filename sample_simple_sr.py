@@ -15,7 +15,8 @@ from util.dataloader import get_dataset, get_dataloader
 from util.img_utils import clear_color, mask_generator
 from util.logger import get_logger
 from util.measure import Measure
-from simple_sr.dataloader import get_lr_image
+from simple_sr.dataset import get_lr_image
+from simple_sr import unet
 
 
 def load_yaml(file_path: str) -> dict:
@@ -123,17 +124,21 @@ def main():
             # Creating proxy X ref
             inverse_measurement = operator.transpose(y_n)
             proxy_ref = inverse_measurement
-            
-        # x_start = sampler.q_sample(proxy_ref, t=500)
+        
+        sr_model = SimpleSR(model_path=task_config['simple_sr']['model_path'], device=device)
+        simple_sr = sr_model.inference(proxy_ref)
+        approximate_t = 800
+        x_start = sampler.q_sample(simple_sr, t=approximate_t)
         
         plt.imsave(os.path.join(out_path, 'input', fname), clear_color(y_n))
         plt.imsave(os.path.join(out_path, 'label', fname), clear_color(ref_img))
-        plt.imsave(os.path.join(out_path, 'inverse', fname), clear_color(inverse_measurement))
-        plt.imsave(os.path.join(out_path, 'inverse', fname), clear_color(proxy_ref))
+        plt.imsave(os.path.join(out_path, 'inverse', 'transpose.png'), clear_color(inverse_measurement))
+        plt.imsave(os.path.join(out_path, 'inverse', 'interpolation.png'), clear_color(proxy_ref))
+        plt.imsave(os.path.join(out_path, 'inverse', 'unet.png'), clear_color(simple_sr))
         
         # Sampling
-        x_start = torch.randn(ref_img.shape, device=device).requires_grad_()
-        sr_img = sample_fn(x_start=x_start, measurement=y_n, record=True, save_root=out_path, t=None)
+        # x_start = torch.randn(ref_img.shape, device=device).requires_grad_()
+        sr_img = sample_fn(x_start=x_start, measurement=y_n, record=True, save_root=out_path, t=approximate_t)
         
         plt.imsave(os.path.join(out_path, 'recon', fname), clear_color(sr_img))
         plt.imsave(os.path.join(out_path, 'inverse', 'x_start.jpeg'), clear_color(x_start))
@@ -142,6 +147,8 @@ def main():
         measure = Measure()
         s = measure.measure(sr_img, ref_img)
         print(f"SR:: PSNR: {s['psnr']}, SSIM: {s['ssim']}, LPIPS: {s['lpips']}")
+        s = measure.measure(simple_sr, ref_img)
+        print(f"Simple SR:: PSNR: {s['psnr']}, SSIM: {s['ssim']}, LPIPS: {s['lpips']}")
         s = measure.measure(proxy_ref, ref_img)
         print(f"Proxy Ref:: PSNR: {s['psnr']}, SSIM: {s['ssim']}, LPIPS: {s['lpips']}")
         s = measure.measure(inverse_measurement, ref_img)

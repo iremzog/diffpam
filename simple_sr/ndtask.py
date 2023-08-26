@@ -1,16 +1,13 @@
+# import sys
+# sys.path.append('/home/studio-lab-user/dps_pam')
+
 import argparse
-import sys
 import torch
 import torch.nn.functional as F
-
-sys.path.append('/home/studio-lab-user/dps_pam')
-
 from simple_sr.unet import Unet
 from simple_sr.trainer import Trainer
 from simple_sr.dataset import PAMDataset, get_dataloader
 from simple_sr.utils import load_yaml
-from guided_diffusion.measurements import get_operator
-from util.img_utils import mask_generator
 
 class NDTrainer(Trainer):
     
@@ -18,28 +15,22 @@ class NDTrainer(Trainer):
         super().__init__()
     
         self.task_config = load_yaml(args.task_config)
-        
-        measure_config = self.task_config['measurement']
-        self.operator = get_operator(device=self.device, **measure_config['operator'])
-        
-        if measure_config['operator']['name'] == 'inpainting':
-            self.mask_gen = mask_generator(**measure_config['mask_opt'])
     
     def build_train_dataloader(self):
-        return get_dataloader(self.task_config['data']['train'], self.operator, 
-                              mask_gen=self.mask_gen,
+        return get_dataloader(self.task_config['data']['train'],  
+                              self.task_config['measurement']['mask_opt']['mask_ratio'],
                               image_size=self.task_config['measurement']['mask_opt']['image_size'],
                               batch_size=8, train=True, device=self.device)
 
     def build_val_dataloader(self):
-        return get_dataloader(self.task_config['data']['test'], self.operator, 
-                              mask_gen=self.mask_gen,
+        return get_dataloader(self.task_config['data']['test'],
+                              self.task_config['measurement']['mask_opt']['mask_ratio'],
                               image_size=self.task_config['measurement']['mask_opt']['image_size'],
                               batch_size=1, train=False, device=self.device)
 
     def build_test_dataloader(self):
-        return get_dataloader(self.task_config['data']['test'], self.operator, 
-                              mask_gen=self.mask_gen,
+        return get_dataloader(self.task_config['data']['test'], 
+                              self.task_config['measurement']['mask_opt']['mask_ratio'],
                               image_size=self.task_config['measurement']['mask_opt']['image_size'],
                               batch_size=1, train=False, device=self.device)
 

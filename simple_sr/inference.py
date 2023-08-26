@@ -1,7 +1,7 @@
-import torch
-import sys
+# import sys
+# sys.path.append('/home/studio-lab-user/dps_pam')
 
-sys.path.append('/home/studio-lab-user/dps_pam')
+import torch
 from simple_sr.unet import Unet
 
 
@@ -22,11 +22,12 @@ class SimpleSR():
         
     def inference(self, lr_img):
         
-        if lr_img.size[1] == 3:
+        out_channel_size = lr_img.size()[1]
+        if out_channel_size == 3:
             lr_img = lr_img[:, 0:1, ...]
             
         simple_res = self.model(lr_img)
         simple_sr = simple_res + lr_img
-        simple_sr = simple_sr.repeat(1, lr_img.size[1], 1, 1)
+        simple_sr = simple_sr.repeat(1, out_channel_size, 1, 1)
         
         return simple_sr

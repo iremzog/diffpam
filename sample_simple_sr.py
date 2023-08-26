@@ -6,6 +6,7 @@ import yaml
 import torch
 import torchvision.transforms as transforms
 import matplotlib.pyplot as plt
+import json
 
 from guided_diffusion.condition_methods import get_conditioning_method
 from guided_diffusion.measurements import get_noise, get_operator
@@ -16,7 +17,7 @@ from util.img_utils import clear_color, mask_generator
 from util.logger import get_logger
 from util.measure import Measure
 from simple_sr.dataset import get_lr_image
-from simple_sr import unet
+from simple_sr.inference import SimpleSR
 
 
 def load_yaml(file_path: str) -> dict:
@@ -92,6 +93,8 @@ def main():
         )
         
     # Do Inference
+    results = []
+    
     for i, ref_img in enumerate(loader):
         logger.info(f"Inference for image {i}")
         fname = str(i).zfill(5) + '.png'
@@ -127,32 +130,32 @@ def main():
         
         sr_model = SimpleSR(model_path=task_config['simple_sr']['model_path'], device=device)
         simple_sr = sr_model.inference(proxy_ref)
-        approximate_t = 800
-        x_start = sampler.q_sample(simple_sr, t=approximate_t)
-        
-        plt.imsave(os.path.join(out_path, 'input', fname), clear_color(y_n))
-        plt.imsave(os.path.join(out_path, 'label', fname), clear_color(ref_img))
-        plt.imsave(os.path.join(out_path, 'inverse', 'transpose.png'), clear_color(inverse_measurement))
-        plt.imsave(os.path.join(out_path, 'inverse', 'interpolation.png'), clear_color(proxy_ref))
-        plt.imsave(os.path.join(out_path, 'inverse', 'unet.png'), clear_color(simple_sr))
         
         # Sampling
+        approximate_t = 200
+        x_start = sampler.q_sample(simple_sr, t=approximate_t)
+        
         # x_start = torch.randn(ref_img.shape, device=device).requires_grad_()
         sr_img = sample_fn(x_start=x_start, measurement=y_n, record=True, save_root=out_path, t=approximate_t)
         
+        plt.imsave(os.path.join(out_path, 'input', fname), clear_color(y_n))
+        plt.imsave(os.path.join(out_path, 'label', fname), clear_color(ref_img))
+        plt.imsave(os.path.join(out_path, 'inverse', f'interpolation_{fname}'), clear_color(proxy_ref))
+        plt.imsave(os.path.join(out_path, 'inverse', f'unet_{fname}'), clear_color(simple_sr))
         plt.imsave(os.path.join(out_path, 'recon', fname), clear_color(sr_img))
-        plt.imsave(os.path.join(out_path, 'inverse', 'x_start.jpeg'), clear_color(x_start))
         
         # Results
+        names = ['DiffPam', 'UNet', 'Interpolation', 'Input']
         measure = Measure()
-        s = measure.measure(sr_img, ref_img)
-        print(f"SR:: PSNR: {s['psnr']}, SSIM: {s['ssim']}, LPIPS: {s['lpips']}")
-        s = measure.measure(simple_sr, ref_img)
-        print(f"Simple SR:: PSNR: {s['psnr']}, SSIM: {s['ssim']}, LPIPS: {s['lpips']}")
-        s = measure.measure(proxy_ref, ref_img)
-        print(f"Proxy Ref:: PSNR: {s['psnr']}, SSIM: {s['ssim']}, LPIPS: {s['lpips']}")
-        s = measure.measure(inverse_measurement, ref_img)
-        print(f"Inv Meas:: PSNR: {s['psnr']}, SSIM: {s['ssim']}, LPIPS: {s['lpips']}")
+        
+        for j, img in enumerate([sr_img, simple_sr, proxy_ref, inverse_measurement]):
+            s = measure.measure(img, ref_img)
+            print(f"{names[j]}:: PSNR: {s['psnr']}, SSIM: {s['ssim']}, LPIPS: {s['lpips']}")
+            s['method'] = names[j]
+            results.append(s)
+    
+    with open(os.path.join(out_path, 'results.json'), 'w') as fout:
+        json.dump(results, fout)
 
 
 if __name__ == '__main__':

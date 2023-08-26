@@ -2,6 +2,7 @@ from functools import partial
 import os
 import argparse
 import yaml
+import json
 
 import torch
 import torchvision.transforms as transforms
@@ -15,7 +16,7 @@ from util.dataloader import get_dataset, get_dataloader
 from util.img_utils import clear_color, mask_generator
 from util.logger import get_logger
 from util.measure import Measure
-from simple_sr.dataloader import get_lr_image
+from simple_sr.dataset import get_lr_image
 
 
 def load_yaml(file_path: str) -> dict:
@@ -91,6 +92,7 @@ def main():
         )
         
     # Do Inference
+    results = []
     for i, ref_img in enumerate(loader):
         logger.info(f"Inference for image {i}")
         fname = str(i).zfill(5) + '.png'
@@ -126,27 +128,28 @@ def main():
             
         # x_start = sampler.q_sample(proxy_ref, t=500)
         
-        plt.imsave(os.path.join(out_path, 'input', fname), clear_color(y_n))
-        plt.imsave(os.path.join(out_path, 'label', fname), clear_color(ref_img))
-        plt.imsave(os.path.join(out_path, 'inverse', fname), clear_color(inverse_measurement))
-        plt.imsave(os.path.join(out_path, 'inverse', fname), clear_color(proxy_ref))
-        
         # Sampling
         x_start = torch.randn(ref_img.shape, device=device).requires_grad_()
         sr_img = sample_fn(x_start=x_start, measurement=y_n, record=True, save_root=out_path, t=None)
         
+        plt.imsave(os.path.join(out_path, 'input', fname), clear_color(y_n))
+        plt.imsave(os.path.join(out_path, 'label', fname), clear_color(ref_img))
+        plt.imsave(os.path.join(out_path, 'inverse', f'interpolation_{fname}'), clear_color(proxy_ref))
         plt.imsave(os.path.join(out_path, 'recon', fname), clear_color(sr_img))
-        plt.imsave(os.path.join(out_path, 'inverse', 'x_start.jpeg'), clear_color(x_start))
         
         # Results
+        names = ['DiffPam', 'Interpolation', 'Input']
         measure = Measure()
-        s = measure.measure(sr_img, ref_img)
-        print(f"SR:: PSNR: {s['psnr']}, SSIM: {s['ssim']}, LPIPS: {s['lpips']}")
-        s = measure.measure(proxy_ref, ref_img)
-        print(f"Proxy Ref:: PSNR: {s['psnr']}, SSIM: {s['ssim']}, LPIPS: {s['lpips']}")
-        s = measure.measure(inverse_measurement, ref_img)
-        print(f"Inv Meas:: PSNR: {s['psnr']}, SSIM: {s['ssim']}, LPIPS: {s['lpips']}")
-
-
+        
+        for j, img in enumerate([sr_img, proxy_ref, inverse_measurement]):
+            s = measure.measure(img, ref_img)
+            print(f"{names[j]}:: PSNR: {s['psnr']}, SSIM: {s['ssim']}, LPIPS: {s['lpips']}")
+            s['method'] = names[j]
+            results.append(s)
+    
+    with open(os.path.join(out_path, 'results.json'), 'w') as fout:
+        json.dump(results, fout)
+        
+        
 if __name__ == '__main__':
     main()

@@ -1,7 +1,7 @@
 data:
   name: pam
-  train: ./data/train_patches/
-  test: ./data/val_patches/
+  train: ./data/train_samples/
+  test: ./data/test_samples/
 
 hyperparams:
     max_updates: 10000

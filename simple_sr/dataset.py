@@ -94,11 +94,5 @@ class PAMDataset(torch.utils.data.Dataset):
         hr_image = Image.open(img_path) 
         hr_image = self.transforms(hr_image).unsqueeze(0).to(self.device)
         lr_image = get_lr_image(hr_image, self.ratio[0], self.ratio[1])
-        
-        # if self.mask_gen is not None:
-        #     mask = self.mask_gen(hr_image)
-        #     lr_image = self.operator.forward(hr_image, mask=mask)
-        # else:
-        #     lr_image = self.operator.forward(hr_image)
 
         return lr_image[0], hr_image[0]

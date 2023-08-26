@@ -5,7 +5,8 @@ from PIL import Image
 from tqdm import tqdm
 from torch.utils.tensorboard import SummaryWriter
 import numpy as np
-from utils.utils import plot_img, move_to_device, load_checkpoint, save_checkpoint, tensors_to_scalars, Measure
+from util.measure import Measure
+from simple_sr.utils import plot_img, move_to_device, load_checkpoint, save_checkpoint, tensors_to_scalars
 
 
 class Trainer:
@@ -60,7 +61,7 @@ class Trainer:
         dataloader = self.build_train_dataloader()
 
         initial_step = self.global_step
-        train_pbar = tqdm(range(initial_step, 11001, len(dataloader)))
+        train_pbar = tqdm(range(initial_step, 5001, len(dataloader)))
 
         for step in train_pbar:
             for batch in dataloader:
@@ -68,7 +69,7 @@ class Trainer:
                     with torch.no_grad():
                         model.eval()
                         self.validate(training_step)
-                    save_checkpoint(model, optimizer, self.work_dir, training_step, 2)
+                    save_checkpoint(model, optimizer, self.work_dir, training_step, 20)
                 model.train()
                 batch = move_to_device(batch, self.device)
                 losses, total_loss = self.training_step(batch)

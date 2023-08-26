@@ -1,5 +1,5 @@
 data/
-results/
+*results/
 checkpoints/
 models/
 *.ipynb_checkpoints

@@ -5,7 +5,7 @@ conditioning:
 
 data:
   name: pam
-  root: ./data/samples/
+  root: ./data/super_res_samples/
 
 measurement:
   operator:

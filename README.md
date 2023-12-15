@@ -98,5 +98,12 @@ noise:
 If you find our work interesting, please consider citing
 
 ```
-
+@misc{loc2023speeding,
+      title={Speeding up Photoacoustic Imaging using Diffusion Models}, 
+      author={Irem Loc and Mehmet Burcin Unlu},
+      year={2023},
+      eprint={2312.08834},
+      archivePrefix={arXiv},
+      primaryClass={physics.med-ph}
+}
 ```

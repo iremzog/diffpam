@@ -1,8 +1,10 @@
 from abc import ABC, abstractmethod
 import torch
+from pytorch_wavelets import DWTForward
+from torchmetrics.functional.image import total_variation
 
 __CONDITIONING_METHOD__ = {}
-
+device = torch.device("cuda" if torch.cuda.is_available() else 'cpu') 
 
 def register_conditioning_method(name: str):
     def wrapper(cls):
@@ -107,6 +109,59 @@ class PosteriorSamplingPlus(ConditioningMethod):
             difference = measurement - self.operator.forward(x_0_hat_noise)
             norm += torch.linalg.norm(difference) / self.num_sampling
 
+        norm_grad = torch.autograd.grad(outputs=norm, inputs=x_prev)[0]
+        x_t -= norm_grad * self.scale
+        return x_t, norm
+    
+
+'''
+Weighted wavelet transform regularization added to posterior sampling
+'''
+@register_conditioning_method(name='ps+reg')
+class RegularizedPosteriorSampling(ConditioningMethod):
+    def __init__(self, operator, noiser, **kwargs):
+        super().__init__(operator, noiser)
+        self.scale = kwargs.get('scale', 1.0)
+        self.dwt = DWTForward(J=3, mode='symmetric', wave='bior3.5').to(device)
+
+    def conditioning(self, x_prev, x_t, x_0_hat, measurement, **kwargs):
+        
+        coeffs = self.dwt(x_0_hat)
+        l1_norm = torch.sum(torch.abs(coeffs[0]))
+        total_pixels = coeffs[0].nelement()
+        for c in coeffs[1]:
+            l1_norm += torch.sum(torch.abs(c))
+            total_pixels += c.nelement()
+        wavelet_regularization = l1_norm/total_pixels
+
+        difference = measurement - self.operator.forward(x_0_hat, **kwargs)
+        # print('MSE', torch.linalg.norm(difference))
+        # print('Reg', wavelet_regularization)
+        norm = torch.linalg.norm(difference) + 10*wavelet_regularization
+        
+        norm_grad = torch.autograd.grad(outputs=norm, inputs=x_prev)[0]
+        x_t -= norm_grad * self.scale
+        return x_t, norm
+    
+    
+
+'''
+tv regularization added to posterior sampling
+'''
+@register_conditioning_method(name='ps+tvreg')
+class TVRegularizedPosteriorSampling(ConditioningMethod):
+    def __init__(self, operator, noiser, **kwargs):
+        super().__init__(operator, noiser)
+        self.scale = kwargs.get('scale', 1.0)
+
+    def conditioning(self, x_prev, x_t, x_0_hat, measurement, **kwargs):
+        
+        tv = total_variation(x_0_hat, reduction='mean')
+        difference = measurement - self.operator.forward(x_0_hat, **kwargs)
+        print('MSE', torch.linalg.norm(difference))
+        print('TV Reg', tv)
+        norm = torch.linalg.norm(difference) + 3e-4*tv
+        
         norm_grad = torch.autograd.grad(outputs=norm, inputs=x_prev)[0]
         x_t -= norm_grad * self.scale
         return x_t, norm

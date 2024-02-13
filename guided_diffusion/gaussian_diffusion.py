@@ -1,6 +1,5 @@
 import math
 import os
-from functools import partial
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
@@ -198,15 +197,17 @@ class GaussianDiffusion:
                                       noisy_measurement=noisy_measurement,
                                       x_prev=img,
                                       x_0_hat=out['pred_xstart'])
-            img = img.detach_()
+            img = img.detach()
            
             pbar.set_postfix({'distance': distance.item()}, refresh=False)
             if record:
-                if idx % 10 == 0:
+                if idx % 20 == 0: 
                     file_path = os.path.join(save_root, f"progress/x_{str(idx).zfill(4)}.png")
                     plt.imsave(file_path, clear_color(img))
+                    file_path = os.path.join(save_root, f"progress/xstart_{str(idx).zfill(4)}.png")
+                    plt.imsave(file_path, clear_color(out['pred_xstart']))
 
-        return img       
+        return img
         
     def p_sample(self, model, x, t):
         raise NotImplementedError

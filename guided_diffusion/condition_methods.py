@@ -135,9 +135,7 @@ class RegularizedPosteriorSampling(ConditioningMethod):
         wavelet_regularization = l1_norm/total_pixels
 
         difference = measurement - self.operator.forward(x_0_hat, **kwargs)
-        # print('MSE', torch.linalg.norm(difference))
-        # print('Reg', wavelet_regularization)
-        norm = torch.linalg.norm(difference) + 10*wavelet_regularization
+        norm = torch.linalg.norm(difference) + 10*wavelet_regularization 
         
         norm_grad = torch.autograd.grad(outputs=norm, inputs=x_prev)[0]
         x_t -= norm_grad * self.scale
@@ -158,10 +156,9 @@ class TVRegularizedPosteriorSampling(ConditioningMethod):
         
         tv = total_variation(x_0_hat, reduction='mean')
         difference = measurement - self.operator.forward(x_0_hat, **kwargs)
-        print('MSE', torch.linalg.norm(difference))
-        print('TV Reg', tv)
-        norm = torch.linalg.norm(difference) + 3e-4*tv
+        norm = torch.linalg.norm(difference) + 1e-4*tv
         
         norm_grad = torch.autograd.grad(outputs=norm, inputs=x_prev)[0]
         x_t -= norm_grad * self.scale
         return x_t, norm
+    

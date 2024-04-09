@@ -1,9 +1,11 @@
 data:
   name: pam
   train: ./data/train_samples/
+  val: ./data/val_samples/
   test: ./data/test_samples/
 
 hyperparams:
+    model_type: 'rrdb'
     max_updates: 10000
     val_check_interval: 100
     lr: 0.0003

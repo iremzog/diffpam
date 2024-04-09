@@ -1,10 +1,12 @@
-# import sys
-# sys.path.append('/home/studio-lab-user/dps_pam')
+import sys
+sys.path.append('/home/studio-lab-user/diffpam/')
 
 import argparse
 import torch
 import torch.nn.functional as F
 from simple_sr.unet import Unet
+from simple_sr.rrdb import RRDBNet
+from simple_sr.fd_unet import FDUnet
 from simple_sr.trainer import Trainer
 from simple_sr.dataset import PAMDataset, get_dataloader
 from simple_sr.utils import load_yaml
@@ -23,10 +25,10 @@ class NDTrainer(Trainer):
                               batch_size=8, train=True, device=self.device)
 
     def build_val_dataloader(self):
-        return get_dataloader(self.task_config['data']['test'],
+        return get_dataloader(self.task_config['data']['val'],
                               self.task_config['measurement']['mask_opt']['mask_ratio'],
                               image_size=self.task_config['measurement']['mask_opt']['image_size'],
-                              batch_size=1, train=False, device=self.device)
+                              batch_size=1, train=True, device=self.device)
 
     def build_test_dataloader(self):
         return get_dataloader(self.task_config['data']['test'], 
@@ -41,6 +43,14 @@ class NDTrainer(Trainer):
         dim_mults = self.task_config['hyperparams']['dim_mults']
         dim_mults = [int(x) for x in dim_mults.split('|')]
         self.model = Unet(hidden_size, out_dim=1, dim_mults=dim_mults).to(device)
+        
+        if self.task_config['hyperparams']['model_type'] == 'unet':
+            self.model = Unet(hidden_size, out_dim=1, dim_mults=dim_mults).to(device)
+        elif self.task_config['hyperparams']['model_type'] == 'fd-unet':
+            self.model = FDUnet(hidden_size, out_dim=1, dim_mults=dim_mults).to(device)
+        elif self.task_config['hyperparams']['model_type'] == 'rrdb':
+            hidden_size = 32
+            self.model = RRDBNet(1, 1, hidden_size, 8, hidden_size // 2).to(device)
 
         self.global_step = 0
         return self.model

@@ -1,11 +1,11 @@
 conditioning:
-  method: ps
+  method: ps+reg
   params:
     scale: 1.0
 
 data:
   name: pam
-  root: ./data/super_res_samples/
+  root: ./data/natural/
 
 measurement:
   operator:

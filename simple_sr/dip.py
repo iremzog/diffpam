@@ -46,13 +46,8 @@ class DIPTrainer():
     def build_scheduler(self, optimizer):
         return torch.optim.lr_scheduler.StepLR(optimizer, 2000, 0.5)
 
-    def training_step(self, noise, img_hr):
+    def training_step(self, noise, img_hr, mask):
         pred_res = self.model(noise)
-        
-        mask_ratio = self.task_config['measurement']['mask_opt']['mask_ratio']
-        rx, ry = mask_ratio
-        mask = torch.zeros_like(img_hr, device=img_hr.device)
-        mask[..., ::rx, ::ry] = 1
         
         if self.task_config['hyperparams']['loss_type'] == 'l1':
             loss = ((img_hr - pred_res)*mask).abs().mean()
@@ -77,8 +72,13 @@ class DIPTrainer():
         
         hr_image = Image.open(self.task_config['data']['train'])
         hr_image = transforms(hr_image).unsqueeze(0).to(self.device)
+        
+        mask_ratio = self.task_config['measurement']['mask_opt']['mask_ratio']
+        rx, ry = mask_ratio
+        mask = torch.zeros_like(hr_image, device=hr_image.device)
+        mask[..., ::rx, ::ry] = 1
 
-        noise = (torch.rand(*hr_image.size())*0.1).to(self.device)
+        noise = (torch.rand(*hr_image.size())*2-1).to(self.device)
         initial_step = self.global_step
         train_pbar = tqdm(range(initial_step, 5000,))
 
@@ -86,8 +86,8 @@ class DIPTrainer():
                     
             model.train()
             optimizer.zero_grad()
-            noise_reg = torch.normal(0, 0.05, hr_image.size())
-            losses, total_loss = self.training_step(noise+noise_reg, hr_image)
+            noise_reg = torch.normal(0, 0.05, hr_image.size()).to(self.device)
+            losses, total_loss = self.training_step(noise+noise_reg, hr_image, mask)
             total_loss.backward()
             optimizer.step()
             scheduler.step()

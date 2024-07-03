@@ -2,7 +2,9 @@
 # sys.path.append('/home/studio-lab-user/dps_pam')
 
 import torch
-from simple_sr.unet import Unet
+# from simple_sr.unet import Unet
+# from simple_sr.fd_unet import FDUnet
+from simple_sr.rrdb import RRDBNet
 
 
 class SimpleSR():
@@ -11,7 +13,9 @@ class SimpleSR():
         if device is None:
             device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         
-        model = Unet(64, out_dim=1, dim_mults=[1, 2, 2, 4]).to(device)
+        # model = Unet(64, out_dim=1, dim_mults=[1, 2, 2, 4]).to(device)
+        # model = FDUnet(64, out_dim=1, dim_mults=[1, 2, 2, 4]).to(device)
+        model = RRDBNet(1, 1, 32, 8, 32 // 2).to(device)
         
         if model_path is not None:
             ckpt = torch.load(model_path, map_location=device)

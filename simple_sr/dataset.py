@@ -91,7 +91,7 @@ class PAMDataset(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         
         img_path = os.path.join(self.img_dir, self.img_list[idx])
-        hr_image = Image.open(img_path) 
+        hr_image = Image.open(img_path)
         hr_image = self.transforms(hr_image).unsqueeze(0).to(self.device)
         lr_image = get_lr_image(hr_image, self.ratio[0], self.ratio[1])
 

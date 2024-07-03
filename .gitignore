@@ -1,3 +1,7 @@
+*.png
+*.jpeg
+*results/
+*.ckpt
 *.ipynb
 data/
 *results/

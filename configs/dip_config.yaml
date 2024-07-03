@@ -1,0 +1,23 @@
+data:
+  name: pam
+  train: ./data/single/20190412_EpiInj_thinnedskull 3_Image0_index0.jpeg
+
+hyperparams:
+    model_type: 'unet'
+    max_updates: 10000
+    val_check_interval: 100
+    lr: 0.0003
+    loss_type: 'l2'
+    dim_mults: '1|2|2|4'
+    hidden_size: 64
+    
+
+measurement:
+  operator:
+    name: inpainting
+  mask_opt:
+    mask_type: periodic
+    mask_ratio: !!python/tuple [5,1]
+    # mask_len_range: !!python/tuple [128, 129]  # for box
+    mask_prob_range: !!python/tuple [0.8, 0.8]  # for random
+    image_size: 256
